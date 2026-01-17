@@ -1,0 +1,341 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  TENANT
+  OWNER
+  ADMIN
+}
+
+enum UserStatus {
+  OPEN
+  NOT_VERIFIED
+  VERIFIED
+  SUSPENDED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum Religion {
+  ISLAM
+  HINDUISM
+  CHRISTIANITY
+  BUDDHISM
+  OTHER
+}
+
+enum AttachmentType {
+  NID
+  PASSPORT
+  BIRTH_CERTIFICATE
+}
+
+enum HouseholdType {
+  BACHELOR
+  FAMILY
+}
+
+model User {
+  id                   String           @id @default(cuid())
+  name                 String
+  email                String           @unique
+  emailVerified        Boolean          @default(false)
+  emailVerifiedOtp     String?
+  image                String?
+  hashedPassword       String
+  mobileNumber         String
+  mobileNumberVerified Boolean          @default(false)
+  role                 Role             @default(USER)
+  status               UserStatus       @default(OPEN)
+  currentStep          Int              @default(1)
+  credits              Int              @default(10)
+  profile              Profile?
+  address              Address?
+  declaration          Declaration?
+  validation           Validation?
+  sessions             Session[]
+  properties           Property[]
+  propertyUnlocks      PropertyUnlock[]
+  rental               Rental[]
+  payments             Payment[]
+  receivedReviews      ProfileReview[]  @relation("UserReviews")
+  givenReviews         ProfileReview[]  @relation("ReviewerReviews")
+  propertyReviews      PropertyReview[]
+  tenantBookings       BookingRequest[] @relation("TenantBookings")
+  ownerBookings        BookingRequest[] @relation("OwnerBookings")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Profile {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  dateOfBirth DateTime
+  gender      Gender
+  religion    Religion
+  occupation  String
+
+  familySize    Int?
+  householdType HouseholdType?
+
+  nidNumber              String?
+  passportNumber         String?
+  birthCertificateNumber String?
+
+  attachmentType AttachmentType
+  attachment1    String?
+  attachment2    String?
+
+  facebook String?
+  twitter  String?
+  linkedin String?
+  whatsapp String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Address {
+  id                  String @id @default(cuid())
+  userId              String @unique
+  presentDivision     String
+  presentDistrict     String
+  presentUpazila      String
+  presentPostOffice   String
+  presentPostCode     String
+  presentDetails      String
+  permanentDivision   String
+  permanentDistrict   String
+  permanentUpazila    String
+  permanentPostOffice String
+  permanentPostCode   String
+  permanentDetails    String
+  user                User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Declaration {
+  id        String @id @default(cuid())
+  userId    String @unique
+  photo     String
+  signature String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum PropertyType {
+  APARTMENT
+  HOUSE
+  ROOM
+}
+
+enum PetPolicy {
+  ALLOWED
+  NOT_ALLOWED
+}
+
+enum PropertyStatus {
+  PENDING
+  AVAILABLE
+  RENTED
+  REJECTED
+}
+
+model Property {
+  id              String           @id @default(cuid())
+  title           String
+  slug            String           @unique
+  location        String
+  price           Int
+  bedrooms        Int
+  bathrooms       Int
+  sqft            Int
+  availableFrom   DateTime
+  description     String
+  leaseTerm       String
+  amenities       String[]
+  images          String[]
+  propertyType    PropertyType
+  petPolicy       PetPolicy
+  status          PropertyStatus   @default(PENDING)
+  propertyUnlocks PropertyUnlock[]
+  rental          Rental?
+  propertyReviews PropertyReview[]
+  bookingRequests BookingRequest[]
+
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PropertyUnlock {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  property   Property @relation(fields: [propertyId], references: [id])
+  propertyId String
+  createdAt  DateTime @default(now())
+}
+
+model Rental {
+  id         String @id @default(cuid())
+  tenantId   String
+  propertyId String @unique
+
+  startDate DateTime
+  endDate   DateTime
+
+  tenant   User     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  payments  Payment[]
+  createdAt DateTime  @default(now())
+}
+
+model Payment {
+  id            String    @id @default(cuid())
+  userId        String
+  rentalId      String?
+  bookingId     String?
+  startDate     DateTime?
+  description   String
+  amount        Float
+  paid          Boolean   @default(false)
+  paymentMethod String?
+  transactionId String    @unique
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rental Rental? @relation(fields: [rentalId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model Validation {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  personalInfoVerified Boolean @default(false)
+  personalInfoRemarks  String?
+
+  nidSmartCardVerified Boolean @default(false)
+  nidSmartCardRemarks  String?
+
+  passportVerified Boolean @default(false)
+  passportRemarks  String?
+
+  birthCertificateVerified Boolean @default(false)
+  birthCertificateRemarks  String?
+
+  presentAddressVerified Boolean @default(false)
+  presentAddressRemarks  String?
+
+  permanentAddressVerified Boolean @default(false)
+  permanentAddressRemarks  String?
+
+  facebookVerified Boolean @default(false)
+  facebookRemarks  String?
+
+  twitterVerified Boolean @default(false)
+  twitterRemarks  String?
+
+  linkedinVerified Boolean @default(false)
+  linkedinRemarks  String?
+
+  whatsappVerified Boolean @default(false)
+  whatsappRemarks  String?
+
+  declarationVerified Boolean @default(false)
+  declarationRemarks  String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProfileReview {
+  id     String @id @default(cuid())
+  rating Float
+
+  userId String
+  user   User   @relation("UserReviews", fields: [userId], references: [id], onDelete: Cascade)
+
+  reviewerId String
+  reviewer   User   @relation("ReviewerReviews", fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, reviewerId])
+}
+
+model PropertyReview {
+  id       String  @id @default(cuid())
+  rating   Float
+  feedback String?
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  reviewerId String
+  reviewer   User     @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum BookingStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model BookingRequest {
+  id String @id @default(cuid())
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  tenantId String
+  tenant   User   @relation("TenantBookings", fields: [tenantId], references: [id])
+
+  ownerId String
+  owner   User   @relation("OwnerBookings", fields: [ownerId], references: [id])
+
+  status BookingStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([propertyId, tenantId])
+}
