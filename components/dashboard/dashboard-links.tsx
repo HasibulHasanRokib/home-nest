@@ -8,6 +8,7 @@ import {
   CreditCard,
   BookMarked,
   MessageSquare,
+  Crown,
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -33,12 +34,14 @@ const ownerNavigation = [
     icon: MessageSquare,
   },
   { name: "Payments", href: "/dashboard/payments-history", icon: CreditCard },
+  { name: "Active plan", href: "/dashboard/active-plan", icon: Crown },
 ];
 
 const tenantNavigation = [
   { name: "Dashboard", href: "/dashboard/tenant", icon: LayoutDashboard },
   { name: "Bookings", href: "/dashboard/tenant/bookings", icon: BookMarked },
   { name: "Payments", href: "/dashboard/payments-history", icon: CreditCard },
+  { name: "Active plan", href: "/dashboard/active-plan", icon: Crown },
 ];
 
 export function DashboardLinks({ role }: { role: Role }) {

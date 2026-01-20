@@ -11,10 +11,16 @@ import Logo from "../logo";
 import { getCurrentUser } from "@/lib/get-current-user";
 import { DashboardUser } from "./dashboard-user";
 import { DashboardLinks } from "./dashboard-links";
+import { prisma } from "@/lib/prisma";
 
 export async function DashboardSidebar() {
   const user = await getCurrentUser();
+
   if (!user) return null;
+
+  const pkg = await prisma.package.findFirst({
+    where: { userId: user.id, active: true },
+  });
 
   return (
     <Sidebar>
@@ -29,7 +35,7 @@ export async function DashboardSidebar() {
         <DashboardLinks role={user.role} />
       </SidebarContent>
       <SidebarFooter className="border-t">
-        <DashboardUser user={user} />
+        <DashboardUser user={user} pkg={pkg} />
       </SidebarFooter>
     </Sidebar>
   );

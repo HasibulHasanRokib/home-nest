@@ -16,7 +16,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { User } from "@/lib/generated/prisma/client";
+import { Package, User } from "@/lib/generated/prisma/client";
 import { getInitials } from "@/lib/utils";
 import { CircleUser, Crown, EllipsisVertical, LogOut } from "lucide-react";
 import {
@@ -34,7 +34,13 @@ import { ConfirmActionButton } from "../confirm-action-button";
 import Link from "next/link";
 import { ChangePasswordForm } from "@/app/auth/change-password";
 
-export function DashboardUser({ user }: { user: User }) {
+export function DashboardUser({
+  user,
+  pkg,
+}: {
+  user: User;
+  pkg: Package | null;
+}) {
   const { isMobile } = useSidebar();
 
   return (
@@ -86,12 +92,20 @@ export function DashboardUser({ user }: { user: User }) {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <Link href={"/upgrade-plan"}>
+              {pkg?.active ? (
                 <DropdownMenuItem>
-                  <Crown />
-                  Upgrade your plan
+                  <Crown className="text-yellow-500" />
+                  Using {pkg.packageName.toUpperCase()} Plan
                 </DropdownMenuItem>
-              </Link>
+              ) : (
+                <Link href="/upgrade-plan">
+                  <DropdownMenuItem>
+                    <Crown />
+                    Upgrade your plan
+                  </DropdownMenuItem>
+                </Link>
+              )}
+
               <Link href={`/profile/${user.id}`}>
                 <DropdownMenuItem>
                   <CircleUser />

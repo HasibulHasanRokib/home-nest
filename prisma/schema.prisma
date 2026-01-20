@@ -74,6 +74,7 @@ model User {
   propertyReviews      PropertyReview[]
   tenantBookings       BookingRequest[] @relation("TenantBookings")
   ownerBookings        BookingRequest[] @relation("OwnerBookings")
+  packages             Package[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -338,4 +339,16 @@ model BookingRequest {
   updatedAt DateTime @updatedAt
 
   @@unique([propertyId, tenantId])
+}
+
+model Package {
+  id            String  @id @default(cuid())
+  userId        String
+  transactionId String  @unique
+  packageName   String
+  active        Boolean @default(false)
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
