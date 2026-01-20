@@ -26,7 +26,7 @@ export async function Navbar() {
               Properties
             </Link>
             <Link
-              href="/#how-it-works"
+              href="/how-it-works"
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               How It Works
