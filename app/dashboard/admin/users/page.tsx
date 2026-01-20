@@ -65,6 +65,9 @@ export default async function AdminUsersPage() {
     },
     include: {
       properties: true,
+      packages: {
+        where: { active: true },
+      },
     },
   });
   return (
@@ -99,6 +102,7 @@ export default async function AdminUsersPage() {
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
+                  <TableHead>Package</TableHead>
                   <TableHead>Credits</TableHead>
                   <TableHead>Properties</TableHead>
                   <TableHead>Status</TableHead>
@@ -116,6 +120,15 @@ export default async function AdminUsersPage() {
                     </TableCell>
                     <TableCell>
                       <Badge>{user.role}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {user.packages.length > 0 ? (
+                        <Badge className="capitalize">
+                          {user.packages[0].packageName}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline">Free</Badge>
+                      )}
                     </TableCell>
                     <TableCell>{user.credits} credits</TableCell>
                     <TableCell className="text-muted-foreground">
