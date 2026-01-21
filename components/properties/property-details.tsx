@@ -371,8 +371,8 @@ export function PropertyDetails({
                         startTransition(async () => {
                           const res = await requestBooking(property.id);
 
-                          if (res?.error) toast(res.error);
-                          else toast(res.success);
+                          if (res?.error) toast.error(res.error);
+                          else toast.success(res.success);
                         })
                       }
                     >

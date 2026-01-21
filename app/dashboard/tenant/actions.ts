@@ -5,6 +5,10 @@ import { prisma } from "@/lib/prisma";
 import { dataConfig, sslConfig } from "@/lib/ssl-commerz-config";
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
+import { Resend } from "resend";
+import BookingEmailTemplate from "./bookings/booking-email-template";
+
+const resend = new Resend(process.env.RESEND_API_KEY!);
 
 export async function propertyPaymentAction({
   propertyId,
@@ -128,6 +132,9 @@ export async function requestBooking(propertyId: string) {
 
   const property = await prisma.property.findUnique({
     where: { id: propertyId },
+    include: {
+      owner: true,
+    },
   });
 
   if (!property) return { error: "Property not found" };
@@ -158,6 +165,19 @@ export async function requestBooking(propertyId: string) {
       ownerId: property.ownerId,
     },
   });
+
+  const { data, error } = await resend.emails.send({
+    from: "HomeNest <onboarding@resend.dev>",
+    to: ["delivered@resend.dev"],
+    subject: "Booking request",
+    react: BookingEmailTemplate({
+      propertyName: property.title,
+      tenantName: currentUser.name,
+      ownerName: property.owner.name,
+    }),
+  });
+
+  console.log({ data, error });
 
   return { success: "Request sent successfully" };
 }
