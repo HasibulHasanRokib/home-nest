@@ -1,9 +1,9 @@
 "use server";
 
-import { User } from "@/lib/generated/prisma/client";
-import { prisma } from "@/lib/prisma";
 import z from "zod";
 import bcrypt from "bcryptjs";
+import { User } from "@/lib/generated/prisma/client";
+import { prisma } from "@/lib/prisma";
 import {
   changePasswordSchema,
   forgotPasswordFormSchema,
@@ -14,6 +14,10 @@ import {
 import { signIn, signOut } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/get-current-user";
+import { Resend } from "resend";
+import { OtpEmailTemplate } from "./sign-up/otp-email-template";
+
+const resend = new Resend(process.env.RESEND_API_KEY!);
 
 type TResetPasswordAction = {
   userId: string;
@@ -60,7 +64,7 @@ export async function resetPasswordAction({
 }
 
 export async function forgotPasswordAction(
-  data: z.infer<typeof forgotPasswordFormSchema>
+  data: z.infer<typeof forgotPasswordFormSchema>,
 ) {
   try {
     const validatedData = forgotPasswordFormSchema.safeParse(data);
@@ -104,7 +108,7 @@ export async function forgotPasswordAction(
 }
 
 export async function updatePasswordAction(
-  data: z.infer<typeof changePasswordSchema>
+  data: z.infer<typeof changePasswordSchema>,
 ) {
   try {
     const currentUser = await getCurrentUser();
@@ -249,7 +253,7 @@ export async function resendOtpAction(userId: string) {
 export async function verifyOtpAction(
   otp: string,
   userId: string,
-  type: "account-verify" | "forgot-password" = "account-verify"
+  type: "account-verify" | "forgot-password" = "account-verify",
 ) {
   try {
     if (!otp || !userId) {
@@ -288,7 +292,13 @@ export async function verifyOtpAction(
 // Send Otp
 export const sendOtp = async (email: string) => {
   const otp = Math.floor(100000 + Math.random() * 900000);
-  console.log(`Sending OTP ${otp} to ${email}`);
+  const { data, error } = await resend.emails.send({
+    from: "HomeNest <onboarding@resend.dev>",
+    to: ["delivered@resend.dev"],
+    subject: "Sending OTP",
+    react: OtpEmailTemplate({ otp }),
+  });
+  console.log({ data, error, email });
   return otp;
 };
 
@@ -342,7 +352,7 @@ export async function signUpAction(data: z.infer<typeof signUpFormSchema>) {
 // Verify password
 export async function verifyPassword(
   password: string,
-  hashedPassword: string
+  hashedPassword: string,
 ): Promise<boolean> {
   return bcrypt.compare(password, hashedPassword);
 }

@@ -9,7 +9,6 @@ import { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { InputOTPForm } from "./input-otp-form";
 import { ResendOtp } from "./resend-otp";
-import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import Logo from "@/components/logo";
 import { notFound } from "next/navigation";
@@ -45,12 +44,6 @@ export default async function InputOtpPage(props: {
   return (
     <Card className="dark:bg-card w-full max-w-xl bg-white/90 shadow-xl backdrop-blur-sm">
       <CardHeader className="text-center">
-        <Alert className="mb-2 bg-primary/10">
-          <AlertTitle className="text-center">
-            For testing purposes, your OTP is :{" "}
-            <span className="text-primary">{user.emailVerifiedOtp}</span>
-          </AlertTitle>
-        </Alert>
         <h2 className="text-2xl font-bold">Verify OTP</h2>
         <p className="mt-2 text-sm text-gray-600">
           Please enter the OTP sent to your mobile number

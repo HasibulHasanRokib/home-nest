@@ -30,7 +30,7 @@ import { useRouter } from "next/navigation";
 import { Progress } from "@/components/ui/progress";
 import { ErrorMessage } from "@/components/error-message";
 import { signUpFormSchema } from "@/lib/zod-schema/auth-schema";
-import { Spinner } from "../../../components/ui/spinner";
+import { Spinner } from "@/components/ui/spinner";
 import { signUpAction } from "../actions";
 import Logo from "@/components/logo";
 import { Separator } from "@/components/ui/separator";
@@ -112,7 +112,7 @@ export function SignUpForm() {
       } else {
         form.reset();
         router.push(
-          `/auth/input-otp?id=${response.user?.id}&type=account-verify`
+          `/auth/input-otp?id=${response.user?.id}&type=account-verify`,
         );
       }
     });
@@ -223,8 +223,8 @@ export function SignUpForm() {
                             passwordStrength.score < 50
                               ? "text-red-600"
                               : passwordStrength.score < 75
-                              ? "text-yellow-600"
-                              : "text-green-600"
+                                ? "text-yellow-600"
+                                : "text-green-600"
                           }`}
                         >
                           {passwordStrength.feedback}
