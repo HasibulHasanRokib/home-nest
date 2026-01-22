@@ -7,6 +7,10 @@ export async function FeaturedProperties() {
     where: {
       status: PropertyStatus.AVAILABLE,
     },
+    take: 8,
+    orderBy: {
+      createdAt: "desc",
+    },
   });
   return (
     <section
