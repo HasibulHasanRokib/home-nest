@@ -137,7 +137,9 @@ export default async function ProfilePage({
                     <div className="flex items-center gap-2">
                       <Phone className="h-4 w-4" />
                       <span>{formatBDPhone(user.mobileNumber)}</span>
-                      <VerificationBadge verified={user.mobileNumberVerified} />
+                      <VerificationBadge
+                        verified={user.validation?.mobileNumberVerified}
+                      />
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <CalendarDays className="h-4 w-4" />

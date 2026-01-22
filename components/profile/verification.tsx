@@ -21,11 +21,11 @@ interface DocumentVerification {
 function groupByCategory(docs: DocumentVerification[]) {
   return {
     "Personal Info": docs.filter((d) =>
-      ["info", "nid", "birth", "passport"].includes(d.id)
+      ["info", "nid", "birth", "passport", "phone_number"].includes(d.id),
     ),
     Address: docs.filter((d) => ["present", "permanent"].includes(d.id)),
     "Social Links": docs.filter((d) =>
-      ["facebook", "twitter", "linkedin", "whatsapp"].includes(d.id)
+      ["facebook", "twitter", "linkedin", "whatsapp"].includes(d.id),
     ),
     Legal: docs.filter((d) => d.id === "declaration"),
   };
@@ -35,7 +35,7 @@ export function VerificationManagement({ userId }: { userId: string }) {
   const [documents, setDocuments] = useState<DocumentVerification[]>([]);
   const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
   const [editingNotes, setEditingNotes] = useState<{ [key: string]: string }>(
-    {}
+    {},
   );
   const [editingVerified, setEditingVerified] = useState<{
     [key: string]: boolean;
@@ -70,7 +70,7 @@ export function VerificationManagement({ userId }: { userId: string }) {
         userId,
         docId,
         editingVerified[docId],
-        editingNotes[docId]
+        editingNotes[docId],
       );
 
       setDocuments((prev) =>
@@ -81,8 +81,8 @@ export function VerificationManagement({ userId }: { userId: string }) {
                 verified: editingVerified[docId],
                 notes: editingNotes[docId],
               }
-            : d
-        )
+            : d,
+        ),
       );
 
       setExpandedDoc(null);

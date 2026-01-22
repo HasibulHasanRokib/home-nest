@@ -47,34 +47,33 @@ enum HouseholdType {
 }
 
 model User {
-  id                   String           @id @default(cuid())
-  name                 String
-  email                String           @unique
-  emailVerified        Boolean          @default(false)
-  emailVerifiedOtp     String?
-  image                String?
-  hashedPassword       String
-  mobileNumber         String
-  mobileNumberVerified Boolean          @default(false)
-  role                 Role             @default(USER)
-  status               UserStatus       @default(OPEN)
-  currentStep          Int              @default(1)
-  credits              Int              @default(10)
-  profile              Profile?
-  address              Address?
-  declaration          Declaration?
-  validation           Validation?
-  sessions             Session[]
-  properties           Property[]
-  propertyUnlocks      PropertyUnlock[]
-  rental               Rental[]
-  payments             Payment[]
-  receivedReviews      ProfileReview[]  @relation("UserReviews")
-  givenReviews         ProfileReview[]  @relation("ReviewerReviews")
-  propertyReviews      PropertyReview[]
-  tenantBookings       BookingRequest[] @relation("TenantBookings")
-  ownerBookings        BookingRequest[] @relation("OwnerBookings")
-  packages             Package[]
+  id               String           @id @default(cuid())
+  name             String
+  email            String           @unique
+  emailVerified    Boolean          @default(false)
+  emailVerifiedOtp String?
+  image            String?
+  hashedPassword   String
+  mobileNumber     String
+  role             Role             @default(USER)
+  status           UserStatus       @default(OPEN)
+  currentStep      Int              @default(1)
+  credits          Int              @default(10)
+  profile          Profile?
+  address          Address?
+  declaration      Declaration?
+  validation       Validation?
+  sessions         Session[]
+  properties       Property[]
+  propertyUnlocks  PropertyUnlock[]
+  rental           Rental[]
+  payments         Payment[]
+  receivedReviews  ProfileReview[]  @relation("UserReviews")
+  givenReviews     ProfileReview[]  @relation("ReviewerReviews")
+  propertyReviews  PropertyReview[]
+  tenantBookings   BookingRequest[] @relation("TenantBookings")
+  ownerBookings    BookingRequest[] @relation("OwnerBookings")
+  packages         Package[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -249,6 +248,9 @@ model Validation {
 
   personalInfoVerified Boolean @default(false)
   personalInfoRemarks  String?
+
+  mobileNumberVerified Boolean @default(false)
+  mobileNumberRemarks  String?
 
   nidSmartCardVerified Boolean @default(false)
   nidSmartCardRemarks  String?

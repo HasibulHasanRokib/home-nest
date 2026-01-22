@@ -71,7 +71,7 @@ export async function getVerificationData(userId: string) {
       name: label,
       verified: validation[verified as keyof typeof validation] as boolean,
       notes: (validation[remarks as keyof typeof validation] as string) || "",
-    })
+    }),
   );
 }
 
@@ -79,9 +79,10 @@ export async function updateVerification(
   userId: string,
   docId: string,
   verified: boolean,
-  notes: string
+  notes: string,
 ) {
   const fields = verificationFields[docId as keyof typeof verificationFields];
+  console.log({ fields });
   if (!fields) throw new Error("Invalid document type");
 
   const validation = await prisma.validation.upsert({
@@ -110,6 +111,7 @@ export async function updateVerification(
     validation.twitterVerified &&
     validation.linkedinVerified &&
     validation.whatsappVerified &&
+    validation.mobileNumberVerified &&
     validation.declarationVerified;
 
   if (hasAnyIdentity && allOthersVerified) {

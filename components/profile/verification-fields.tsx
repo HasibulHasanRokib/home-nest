@@ -4,6 +4,11 @@ export const verificationFields = {
     verified: "personalInfoVerified",
     remarks: "personalInfoRemarks",
   },
+  phone_number: {
+    label: "Phone Number",
+    verified: "mobileNumberVerified",
+    remarks: "mobileNumberRemarks",
+  },
   nid: {
     label: "NID Smart Card",
     verified: "nidSmartCardVerified",
