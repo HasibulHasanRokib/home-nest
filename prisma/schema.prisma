@@ -225,16 +225,17 @@ model Rental {
 }
 
 model Payment {
-  id            String    @id @default(cuid())
-  userId        String
-  rentalId      String?
-  bookingId     String?
-  startDate     DateTime?
-  description   String
-  amount        Float
-  paid          Boolean   @default(false)
-  paymentMethod String?
-  transactionId String    @unique
+  id                String    @id @default(cuid())
+  userId            String
+  rentalId          String?
+  bookingId         String?
+  startDate         DateTime?
+  description       String
+  amount            Float
+  paid              Boolean   @default(false)
+  paymentMethod     String?
+  transactionId     String    @unique
+  paymentReceiptUrl String?
 
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   rental Rental? @relation(fields: [rentalId], references: [id])

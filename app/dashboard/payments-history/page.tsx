@@ -11,7 +11,9 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { CookingPot } from "lucide-react";
+import { CookingPot, Download } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default async function PaymentsPage() {
   const currentUser = await getCurrentUser();
@@ -70,18 +72,15 @@ export default async function PaymentsPage() {
                 <p className="text-primary text-lg font-semibold">
                   ৳{payment.amount.toLocaleString("en-BD")}
                 </p>
-                <p
-                  className={`mt-1 text-sm ${
-                    payment.paid ? "text-success" : "text-warning"
-                  }`}
-                >
+
+                <p className="mt-1 text-sm">
                   {payment.paid ? (
                     <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
                       Paid
                     </Badge>
                   ) : (
                     <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
-                      Pending
+                      Cancel
                     </Badge>
                   )}
                 </p>
@@ -92,24 +91,41 @@ export default async function PaymentsPage() {
               </div>
             </div>
             <div className="ml-4 hidden gap-2 md:flex">
-              <p className="text-primary text-lg font-semibold">
-                ৳{payment.amount.toLocaleString("en-BD")}
-              </p>
-              <p
-                className={`mt-1 text-sm ${
-                  payment.paid ? "text-success" : "text-warning"
-                }`}
-              >
-                {payment.paid ? (
-                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                    Paid
-                  </Badge>
-                ) : (
-                  <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
-                    Cancel
-                  </Badge>
+              <div className="flex flex-col  items-center gap-2">
+                <div className="flex items-center gap-2">
+                  <p className="text-primary text-lg font-semibold">
+                    ৳{payment.amount.toLocaleString("en-BD")}
+                  </p>
+                  <p className="mt-1 text-sm">
+                    {payment.paid ? (
+                      <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                        Paid
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                        Cancel
+                      </Badge>
+                    )}
+                  </p>
+                </div>
+                {payment.paymentReceiptUrl && (
+                  <Link
+                    href={payment.paymentReceiptUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download
+                  >
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2 flex items-center gap-2"
+                    >
+                      <Download size={16} />
+                      Download Receipt
+                    </Button>
+                  </Link>
                 )}
-              </p>
+              </div>
             </div>
           </div>
         </div>
