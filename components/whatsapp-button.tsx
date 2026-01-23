@@ -1,7 +1,7 @@
 "use client";
 
 export function WhatsappButton() {
-  const phone = "8801984710639";
+  const phone = "8801839027207";
   const msg = "Hello, I need some help!";
 
   return (
