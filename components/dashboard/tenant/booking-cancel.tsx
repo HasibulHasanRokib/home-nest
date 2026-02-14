@@ -1,12 +1,12 @@
 "use client";
 
-import { cancelBookingRequest } from "@/app/dashboard/tenant/actions";
+import { cancelBookingRequest } from "@/actions/booking.action";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useTransition } from "react";
 import { toast } from "sonner";
 
-export function CancelBookingButton({ bookingId }: { bookingId: string }) {
+export function BookingCancel({ bookingId }: { bookingId: string }) {
   const [pending, startTransition] = useTransition();
 
   const handleCancel = () => {

@@ -2,7 +2,7 @@ import { SslCommerzPayment } from "sslcommerz";
 
 const store_id = process.env.SSLCOMMERZ_STORE_ID!;
 const store_passwd = process.env.SSLCOMMERZ_STORE_PASSWORD!;
-const is_live = false; //true for live, false for sandbox
+const is_live = false;
 
 export const sslConfig = new SslCommerzPayment(store_id, store_passwd, is_live);
 
@@ -19,7 +19,6 @@ interface Props {
   cus_add1: string;
   cus_phone: string;
 
-  // Optional overrides
   currency?: string;
   shipping_method?: string;
   product_profile?: string;

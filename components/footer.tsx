@@ -1,8 +1,8 @@
 import { Home, Mail, Phone } from "lucide-react";
 
-export function Footer() {
+export async function Footer() {
   return (
-    <footer className="bg-secondary/30 ">
+    <footer className="bg-custom">
       <div className="mx-auto bg-white px-8 py-12">
         <img
           src="/ssLcommerz_banner-1.png"
@@ -136,7 +136,7 @@ export function Footer() {
 
         <div className="mt-12 border-t border-border pt-8 text-center">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} HomeNest. All rights reserved.
+            ©HomeNest. All rights reserved.
           </p>
         </div>
       </div>

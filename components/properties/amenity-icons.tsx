@@ -1,0 +1,46 @@
+import {
+  Wifi,
+  Car,
+  Wind,
+  Dumbbell,
+  UtensilsCrossed,
+  Tv,
+  ShieldCheck,
+  ArrowUp,
+  Zap,
+  Waves,
+  Users,
+  Laptop,
+  Map,
+} from "lucide-react";
+
+export const amenityIcons = {
+  WiFi: Wifi,
+  Parking: Car,
+  Gym: Dumbbell,
+  Elevator: ArrowUp,
+  Generator: Zap,
+  CCTV: Tv,
+  Security: ShieldCheck,
+
+  "Water 24/7": Waves,
+  "Shared Kitchen": UtensilsCrossed,
+  "Private Garden": Map,
+  "Solar Power": Zap,
+  "Maid Room": Users,
+  "LPG Gas": Wind,
+  Balcony: Map,
+  Furnished: Laptop,
+  Microwave: UtensilsCrossed,
+  "Washing Machine": Zap,
+  "Smart Home System": Laptop,
+  "4 Car Parking": Car,
+  "Staff Quarter": Users,
+  "Independent Utility": Zap,
+  "Open Terrace": Map,
+  "Filtered Water": Waves,
+  "Gas Connection": Zap,
+  "Large Balcony": Map,
+};
+
+export const DefaultAmenityIcon = Map;

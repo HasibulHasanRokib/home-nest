@@ -1,44 +1,45 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { Star } from "lucide-react";
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "../ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { Button } from "../ui/button";
-import { Textarea } from "../ui/textarea";
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "../ui/dialog";
-import { PropertyReview, User } from "@/lib/generated/prisma/client";
-import { formatDate, getInitials } from "@/lib/utils";
-import { addPropertyReviewAction } from "@/app/(pages)/properties/actions";
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Spinner } from "../ui/spinner";
+import { User } from "better-auth";
+import { Star } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useState, useTransition } from "react";
+import { Textarea } from "@/components/ui/textarea";
+import { Prisma } from "@/lib/generated/prisma/client";
+import { formatDate, getInitials } from "@/lib/utils";
+import { Spinner } from "@/components/ui/spinner";
+import { propertyReviewAction } from "@/actions/property.action";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-type PropertyReviewWithReviewer = PropertyReview & {
-  reviewer: User;
-};
+type PropertyReviewWithReviewer = Prisma.PropertyReviewGetPayload<{
+  include: { reviewer: true };
+}>;
 
 const STARS = [1, 2, 3, 4, 5] as const;
 
-export function PropertyReviewSection({
+export function PropertyReview({
   propertyReviews,
   propertyId,
-  currentUser,
+  user,
 }: {
   propertyReviews: PropertyReviewWithReviewer[];
   propertyId: string;
-  currentUser: User | null;
+  user: User;
 }) {
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState("");
@@ -54,16 +55,16 @@ export function PropertyReviewSection({
     if (!rating || !feedback) return;
 
     startTransition(async () => {
-      const res = await addPropertyReviewAction({
+      const res = await propertyReviewAction({
         propertyId,
         feedback,
         rating,
       });
 
       if (res?.error) {
-        toast("Something went wrong", { description: res.error });
+        toast.error(res.error);
       } else {
-        toast("Review submitted 🔥");
+        toast.success("Review submitted");
         setRating(0);
         setFeedback("");
       }
@@ -148,10 +149,10 @@ export function PropertyReviewSection({
         )}
       </CardContent>
       <CardFooter>
-        {currentUser && (
+        {user && (
           <Dialog>
             <DialogTrigger asChild>
-              <Button size="sm" className="w-full" variant={"outline"}>
+              <Button size="lg" className="w-full" variant={"secondary"}>
                 Give Review
               </Button>
             </DialogTrigger>

@@ -6,16 +6,6 @@ export const ourFileRouter = {
   imageUpload: f({
     image: {
       maxFileSize: "2MB",
-      maxFileCount: 1,
-    },
-  }).onUploadComplete(async ({ file }) => {
-    return {
-      url: file.ufsUrl,
-    };
-  }),
-  multipleImageUpload: f({
-    image: {
-      maxFileSize: "2MB",
       maxFileCount: 5,
     },
   }).onUploadComplete(async ({ file }) => {

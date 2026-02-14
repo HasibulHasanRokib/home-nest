@@ -1,36 +1,37 @@
-import { getCurrentUser } from "@/lib/get-current-user";
 import { PropertyForm } from "@/components/dashboard/owner/property-form";
-import { Role } from "@/lib/generated/prisma/enums";
-import { prisma } from "@/lib/prisma";
+import { Spinner } from "@/components/ui/spinner";
+import { db } from "@/lib/prisma";
+import { getRequiredSession } from "@/lib/session";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
-export default async function EditPropertyPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+type Params = Promise<{ id: string }>;
+
+async function PageComponent({ params }: { params: Params }) {
   const { id } = await params;
-  const currentUser = await getCurrentUser();
-
-  if (!currentUser || currentUser.role !== Role.OWNER) {
-    return notFound();
-  }
-
-  const property = await prisma.property.findFirst({
+  const session = await getRequiredSession();
+  const property = await db.property.findFirst({
     where: {
       id,
-      ownerId: currentUser.id,
+      ownerId: session.user.id,
     },
   });
-
   if (!property) return notFound();
 
   return (
     <PropertyForm
+      credits={session.user.credits || 0}
       mode="edit"
+      propertyId={id}
       initialData={property}
-      propertyId={property.id}
-      credits={currentUser.credits}
     />
+  );
+}
+
+export default function Page({ params }: { params: Params }) {
+  return (
+    <Suspense fallback={<Spinner />}>
+      <PageComponent params={params} />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
-"use client";
-
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Link from "next/link";
+import { db } from "@/lib/prisma";
+import { getInitials } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,15 +11,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar,
-} from "@/components/ui/sidebar";
-import { Package, User } from "@/lib/generated/prisma/client";
-import { getInitials } from "@/lib/utils";
-import { CircleUser, Crown, EllipsisVertical, LogOut } from "lucide-react";
-import {
   AlertDialog,
   AlertDialogTrigger,
   AlertDialogContent,
@@ -29,125 +20,125 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
-import { signOutAction } from "@/app/auth/actions";
-import { ConfirmActionButton } from "../confirm-action-button";
-import Link from "next/link";
-import { ChangePasswordForm } from "@/app/auth/change-password";
+import { Button } from "@/components/ui/button";
+import { CircleUser, Crown, LogOut } from "lucide-react";
+import { SidebarMenu, SidebarMenuItem } from "@/components/ui/sidebar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { signoutAction } from "@/actions/auth.actions";
+import { ActionButton } from "@/components/action-button";
+import { getRequiredSession } from "@/lib/session";
 
-export function DashboardUser({
-  user,
-  pkg,
-}: {
-  user: User;
-  pkg: Package | null;
-}) {
-  const { isMobile } = useSidebar();
+async function getUserWithPackage(userId: string) {
+  "use cache";
+  return await db.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      image: true,
+      credits: true,
+      packages: {
+        where: { active: true },
+        take: 1,
+      },
+    },
+  });
+}
+
+export async function DashboardUser() {
+  const session = await getRequiredSession();
+  const user = await getUserWithPackage(session.user.id);
+  if (!user) return null;
+  const pkg = user.packages?.[0] || null;
 
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuButton size="lg">
-              <Avatar className="h-8 w-8 rounded-lg ">
-                <AvatarImage src={user.image || "user"} alt={user.name} />
-                <AvatarFallback className="rounded-full bg-primary text-primary-foreground text-sm font-medium">
-                  {getInitials(user.name)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium capitalize">
-                  {user.name}
-                </span>
-                <span className="text-muted-foreground truncate text-xs">
-                  {user.email}
-                </span>
-              </div>
-              <EllipsisVertical className="ml-auto size-4" />
-            </SidebarMenuButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-            side={isMobile ? "bottom" : "right"}
-            align="end"
-            sideOffset={4}
-          >
-            <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.image || "user"} alt={user.name} />
-                  <AvatarFallback className="rounded-full bg-primary text-primary-foreground text-sm font-medium">
-                    {getInitials(user.name)}
+        <AlertDialog>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size={"icon"}>
+                <Avatar className="w-10 h-10">
+                  <AvatarImage
+                    src={user.image ?? ""}
+                    alt={user.name ?? "User"}
+                  />
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                    {getInitials(user.name ?? "U")}
                   </AvatarFallback>
                 </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium capitalize">
-                    {user.name}
-                  </span>
-                  <span className="text-muted-foreground truncate text-xs">
-                    {user.credits} credits remaining.
-                  </span>
-                </div>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              {pkg?.active ? (
-                <DropdownMenuItem>
-                  <Crown className="text-yellow-500" />
-                  Using {pkg.packageName.toUpperCase()} Plan
-                </DropdownMenuItem>
-              ) : (
-                <Link href="/upgrade-plan">
-                  <DropdownMenuItem>
-                    <Crown />
-                    Upgrade your plan
-                  </DropdownMenuItem>
-                </Link>
-              )}
+              </Button>
+            </DropdownMenuTrigger>
 
-              <Link href={`/profile/${user.id}`}>
-                <DropdownMenuItem>
-                  <CircleUser />
-                  Profile
+            <DropdownMenuContent className="w-56" align="end">
+              <DropdownMenuLabel className="p-0 font-normal">
+                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                  <Avatar className="h-8 w-8 rounded-lg">
+                    <AvatarImage src={user.image ?? ""} alt={user.name ?? ""} />
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                      {getInitials(user.name ?? "U")}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-medium">{user.name}</span>
+                    <span className="text-muted-foreground truncate text-xs">
+                      {user.credits} credits remaining
+                    </span>
+                  </div>
+                </div>
+              </DropdownMenuLabel>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuGroup>
+                {pkg?.active ? (
+                  <DropdownMenuItem className="text-yellow-600 dark:text-yellow-500">
+                    <Crown className="mr-2 h-4 w-4 fill-current" />
+                    <span className="capitalize">{pkg.packageName} Plan</span>
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem asChild>
+                    <Link href="/upgrade-plan">
+                      <Crown className="mr-2 h-4 w-4" />
+                      <span>Upgrade Plan</span>
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+
+                <DropdownMenuItem asChild>
+                  <Link href={`/profile/${user.id}`}>
+                    <CircleUser className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </Link>
                 </DropdownMenuItem>
-              </Link>
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                <ChangePasswordForm />
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <AlertDialog>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
               <AlertDialogTrigger asChild>
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                  <LogOut className=" h-4 w-4" />
-                  Sign out
+                <DropdownMenuItem>
+                  <LogOut className="mr-1 h-4 w-4 " />
+                  <span>Sign out</span>
                 </DropdownMenuItem>
               </AlertDialogTrigger>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    Are you sure you want to sign out?
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    You’ll be logged out of your account immediately.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <form action={signOutAction}>
-                    <ConfirmActionButton
-                      text="Sign out"
-                      variant="destructive"
-                    />
-                  </form>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Ready to leave?</AlertDialogTitle>
+              <AlertDialogDescription>
+                You’ll be logged out of your account. You'll need to log back in
+                to access your dashboard.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <form action={signoutAction}>
+                <ActionButton text="Sign out" variant="destructive" />
+              </form>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </SidebarMenuItem>
     </SidebarMenu>
   );

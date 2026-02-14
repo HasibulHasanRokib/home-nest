@@ -1,156 +1,66 @@
 "use client";
 
-import z from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-
-import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { useState, useTransition } from "react";
-import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { signInFormSchema } from "@/lib/zod-schema/auth-schema";
+import { useActionState } from "react";
+import { signinAction } from "@/actions/auth.actions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { ErrorMessage } from "@/components/error-message";
-import { signInAction } from "../actions";
-import { useRouter } from "next/navigation";
-import { Separator } from "@/components/ui/separator";
-import Logo from "@/components/logo";
-import { toast } from "sonner";
+import { AlertMessage } from "@/components/alert-message";
 
-export function SignInForm() {
-  const [error, setError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const [isPending, startTransition] = useTransition();
-  const router = useRouter();
-
-  const form = useForm<z.infer<typeof signInFormSchema>>({
-    resolver: zodResolver(signInFormSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
-
-  const onSubmit = (data: z.infer<typeof signInFormSchema>) => {
-    setError("");
-    startTransition(async () => {
-      const response = await signInAction(data);
-      if (response?.otpRequired) {
-        setError(response.error);
-        router.push(`/auth/input-otp?id=${response.userId}`);
-      } else if (response?.error) {
-        setError(response.error);
-      } else {
-        toast("✅ Signed in successfully!");
-        router.push("/dashboard");
-      }
-    });
-  };
-
+export function SigninForm() {
+  const [state, action, pending] = useActionState(signinAction, {});
   return (
-    <Card className="dark:bg-card w-full max-w-xl bg-white/90 shadow-xl backdrop-blur-sm">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-        <CardDescription>
-          Enter your credentials to access your account
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
+    <div className="space-y-2">
+      {state?.message && (
+        <AlertMessage title={state.message} variant={"destructive"} />
+      )}
+      <form action={action}>
+        <div className="flex flex-col gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
               name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <Input
-                    type="email"
-                    placeholder="e.g. example@example.com"
-                    {...field}
-                  />
-                  <FormMessage />
-                </FormItem>
-              )}
+              placeholder="e.g. example@example.com"
+              required
             />
+            {state?.errors?.email && (
+              <p className="text-destructive text-sm">{state.errors.email}</p>
+            )}
+          </div>
 
-            <FormField
-              control={form.control}
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
               name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center justify-between">
-                    Password
-                    <Link
-                      href={"/auth/forgot-password"}
-                      className={buttonVariants({
-                        variant: "link",
-                        size: "sm",
-                      })}
-                    >
-                      Forgot password?
-                    </Link>
-                  </FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        {...field}
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Enter password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              type="password"
+              placeholder="Enter password"
+              required
             />
+            {state?.errors?.password && (
+              <p className="text-destructive text-sm">
+                {state.errors.password}
+              </p>
+            )}
+          </div>
 
-            <Button disabled={isPending} className="w-full" type="submit">
-              {isPending ? <Spinner /> : "Sign In"}
-            </Button>
-            <ErrorMessage error={error} />
-          </form>
-        </Form>
-      </CardContent>
-      <CardFooter className="flex flex-col items-center gap-4">
-        <div className="w-full text-center text-sm">
-          Don&apos;t have an account?{" "}
-          <Link href="/auth/sign-up" className="text-primary hover:underline">
-            Sign up here
-          </Link>
+          <Button disabled={pending} type="submit" className="mt-2 w-full">
+            {pending ? <Spinner /> : "Sign in"}
+          </Button>
         </div>
-
-        <Separator />
-        <Logo />
-      </CardFooter>
-    </Card>
+      </form>
+      <div className="mt-6 text-center text-sm">
+        Don&apos;t have an account?{" "}
+        <Link
+          className="hover:underline text-primary hover:underline-offset-2 "
+          href="/auth/sign-up"
+        >
+          Sign up
+        </Link>
+      </div>
+    </div>
   );
 }

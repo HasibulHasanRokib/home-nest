@@ -1,84 +1,77 @@
 "use client";
-
-import { useState, useTransition } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
 import {
   MapPin,
   Bed,
   Bath,
   Square,
-  Wifi,
-  Car,
-  Wind,
-  Dumbbell,
-  UtensilsCrossed,
-  Tv,
-  Star,
   Mail,
   Phone,
   Calendar,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ArrowUpRightIcon,
 } from "lucide-react";
-import {
-  BookingStatus,
-  Property,
-  PropertyReview,
-  Role,
-  User,
-} from "@/lib/generated/prisma/client";
-import { formatBDPhone, formatDate, getInitials } from "@/lib/utils";
-import { unlockProperty } from "@/app/(pages)/properties/actions";
-import { toast } from "sonner";
-import { Spinner } from "../ui/spinner";
-import { StatusDropdown } from "./status-dropdown";
 import Link from "next/link";
-import { PropertyReviewSection } from "./property-review";
-import { requestBooking } from "@/app/dashboard/tenant/actions";
-import { ProceedToPayment } from "../dashboard/tenant/proceed-to-payment";
+import { toast } from "sonner";
+import { auth } from "@/lib/auth";
+import { useState, useTransition } from "react";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { StatusDropdown } from "./property-status";
+import { Prisma } from "@/lib/generated/prisma/client";
+import { requestBooking } from "@/actions/booking.action";
+import { unlockProperty } from "@/actions/property.action";
+import { BookingStatus } from "@/lib/generated/prisma/enums";
+import { formatBDPhone, formatDate, getInitials } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PropertyReview } from "@/components/properties/property-review";
+import { ProceedToPayment } from "@/components/dashboard/tenant/proceed-to-payment";
+import Image from "next/image";
+import { amenityIcons, DefaultAmenityIcon } from "./amenity-icons";
 
-const amenityIcons = {
-  WiFi: Wifi,
-  Parking: Car,
-  AC: Wind,
-  Gym: Dumbbell,
-  Kitchen: UtensilsCrossed,
-  TV: Tv,
-};
-
-type PropertyWithOwner = Property & {
-  owner: {
-    name: string | null;
-    email: string;
-    mobileNumber: string | null;
-    image: string | null;
+type PropertyRelation = Prisma.PropertyGetPayload<{
+  include: {
+    propertyUnlocks: true;
+    owner: {
+      select: {
+        id: true;
+        name: true;
+        email: true;
+        image: true;
+        profile: {
+          select: {
+            mobileNumber: true;
+          };
+        };
+      };
+    };
   };
-};
-type PropertyReviewWithReviewer = PropertyReview & {
-  reviewer: User;
-};
-export function PropertyDetails({
-  property,
-  credits,
-  isUnlocked,
-  role,
-  ownerRating,
-  propertyReviews,
-  currentUser,
-  bookingStatus,
-}: {
-  property: PropertyWithOwner;
+}>;
+
+type PropertyReview = Prisma.PropertyReviewGetPayload<{
+  include: { reviewer: true };
+}>;
+
+type User = typeof auth.$Infer.Session.user;
+
+interface PropertyDetailsProps {
+  user: User;
   credits: number;
   isUnlocked: boolean;
-  role: Role | undefined;
-  ownerRating: number | undefined;
-  currentUser: User | null;
-  propertyReviews: PropertyReviewWithReviewer[];
+  property: PropertyRelation;
   bookingStatus: BookingStatus | undefined;
-}) {
+  propertyReviews: PropertyReview[];
+}
+
+export function PropertyDetails({
+  bookingStatus,
+  credits,
+  isUnlocked,
+  property,
+  propertyReviews,
+  user,
+}: PropertyDetailsProps) {
   const [isPending, startTransition] = useTransition();
   const [isInfoUnlocked, setIsInfoUnlocked] = useState(isUnlocked);
   const [currentCredits, setCurrentCredits] = useState(credits);
@@ -95,34 +88,32 @@ export function PropertyDetails({
   };
 
   const handleUnlockedInfo = () => {
-    if (currentCredits < 2) return toast("❌ Not enough credits");
+    if (currentCredits < 2) return toast.error("Not enough credits");
 
     startTransition(async () => {
       const res = await unlockProperty(property.id);
 
       if (res.error) {
-        toast(`❌ ${res.error}`);
+        toast.error(res.error);
         return;
       }
 
       setIsInfoUnlocked(true);
       setCurrentCredits(res.creditsLeft ?? currentCredits);
-      toast(`✅ ${res.success}`);
+      toast.success(res.success);
     });
   };
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="grid gap-8 lg:grid-cols-3">
-        {/* Main Content */}
         <div className="lg:col-span-2">
-          {/* Image Gallery */}
-
           <div className="relative mb-4">
             <div className="relative aspect-video overflow-hidden rounded-xl border-2 border-primary/10">
-              <img
+              <Image
                 src={images[currentIndex]}
                 alt="Property image"
+                fill
                 className="h-full w-full object-cover"
               />
 
@@ -154,9 +145,10 @@ export function PropertyDetails({
                       : "border-transparent hover:border-border"
                   }`}
                 >
-                  <img
+                  <Image
                     src={image}
                     alt={`Thumbnail ${index + 1}`}
+                    fill
                     className="h-full w-full object-cover"
                   />
                 </button>
@@ -233,13 +225,16 @@ export function PropertyDetails({
                 <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {property.amenities.map((amenity) => {
                     const Icon =
-                      amenityIcons[amenity as keyof typeof amenityIcons];
+                      amenityIcons[amenity as keyof typeof amenityIcons] ||
+                      DefaultAmenityIcon;
                     return (
                       <div
                         key={amenity}
                         className="flex items-center gap-2 rounded-lg border border-border p-3"
                       >
-                        <Icon className="h-5 w-5 text-muted-foreground" />
+                        {Icon && (
+                          <Icon className="h-5 w-5 text-muted-foreground" />
+                        )}
                         <span className="text-sm font-medium">{amenity}</span>
                       </div>
                     );
@@ -250,16 +245,16 @@ export function PropertyDetails({
           </Card>
 
           {/* Reviews Section */}
-          <PropertyReviewSection
+          <PropertyReview
             propertyReviews={propertyReviews}
             propertyId={property.id}
-            currentUser={currentUser}
+            user={user}
           />
         </div>
 
         {/* Sidebar */}
         <div className="lg:col-span-1">
-          <div className="sticky top-20 space-y-6">
+          <div className="space-y-6">
             {/* Owner Info Card */}
             <Card className="relative overflow-hidden">
               <div
@@ -287,10 +282,6 @@ export function PropertyDetails({
                       <div className="font-semibold capitalize">
                         {property.owner.name}
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                        <span>{ownerRating?.toFixed(1)} rating</span>
-                      </div>
                     </div>
                   </div>
 
@@ -303,20 +294,22 @@ export function PropertyDetails({
                       <span>{property.owner.email}</span>
                     </a>
                     <a
-                      href={`tel:${property.owner.mobileNumber}`}
+                      href={`tel:${property.owner.profile?.mobileNumber}`}
                       className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                     >
                       <Phone className="h-4 w-4" />
                       <span>
-                        {formatBDPhone(property.owner.mobileNumber || "N/A")}
+                        {formatBDPhone(
+                          property.owner.profile?.mobileNumber || "N/A",
+                        )}
                       </span>
                     </a>
                   </div>
-                  <Link href={`/profile/${property.ownerId}`}>
-                    <Button variant={"outline"} className="w-full mt-2">
-                      View profile
-                    </Button>
-                  </Link>
+                  <Button variant={"secondary"} className="w-full mt-2" asChild>
+                    <Link href={`/profile/${property.ownerId}`}>
+                      View profile <ArrowUpRightIcon />
+                    </Link>
+                  </Button>
                 </CardContent>
               </div>
               {!isInfoUnlocked && (
@@ -347,7 +340,7 @@ export function PropertyDetails({
                       Available from {formatDate(property.availableFrom)}
                     </div>
                   </div>
-                  {role === "ADMIN" ? (
+                  {user.role === "ADMIN" ? (
                     <StatusDropdown
                       id={property.id}
                       propertyStatus={property.status}
@@ -381,7 +374,7 @@ export function PropertyDetails({
                   )}
 
                   <div className="mt-4 text-center text-xs text-muted-foreground">
-                    {role === "ADMIN"
+                    {user.role === "ADMIN"
                       ? "You’re reviewing this property as an admin. Update the status once everything meets the platform rules."
                       : "You won't be charged yet. The owner will review your request."}
                   </div>

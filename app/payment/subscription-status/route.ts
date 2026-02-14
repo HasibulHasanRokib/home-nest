@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY!);
+import { db } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 
 export async function POST(request: NextRequest) {
   const form = await request.formData();
@@ -27,7 +25,7 @@ export async function POST(request: NextRequest) {
 
   if (status === "valid") {
     try {
-      const payment = await prisma.payment.findUnique({
+      const payment = await db.payment.findUnique({
         where: { transactionId: tranId },
       });
       if (!payment)
@@ -36,7 +34,7 @@ export async function POST(request: NextRequest) {
           { status: 404 },
         );
 
-      await prisma.payment.update({
+      await db.payment.update({
         where: { transactionId: tranId },
         data: { paid: true, paymentMethod },
       });
@@ -47,12 +45,12 @@ export async function POST(request: NextRequest) {
         premium: 100,
       };
 
-      const p = await prisma.package.update({
+      const p = await db.package.update({
         where: { transactionId: tranId },
         data: { active: true },
       });
       const credits = creditMap[p.packageName];
-      await prisma.user.update({
+      await db.user.update({
         where: { id: payment.userId },
         data: {
           credits: {
@@ -60,23 +58,11 @@ export async function POST(request: NextRequest) {
           },
         },
       });
-      await resend.emails.send({
-        from: "HomeNest <onboarding@resend.dev>",
-        to: ["delivered@resend.dev"],
-        subject: "Subscription Payment Successful",
-        html: `
-         <p>Hi there,</p>
-         <p>Your subscription payment has been received successfully.</p>
-         <p>You now have full access to your subscription features.</p>
-         <p>If you have any questions, feel free to reach out to us anytime.</p>
-         <p>Thanks for choosing HomeNest</p>
-        `,
-      });
     } catch (e) {
       console.error("Payment processing error:", e);
       return redirect("/payment/failed");
     }
   }
-
+  revalidatePath("/dashboard");
   redirect(`/payment/${status}`);
 }

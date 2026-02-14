@@ -9,6 +9,7 @@ import {
   BookMarked,
   MessageSquare,
   Crown,
+  Coins,
 } from "lucide-react";
 import {
   SidebarMenu,
@@ -19,28 +20,33 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const adminNavigation = [
-  { name: "Dashboard", href: "/dashboard/admin", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Users", href: "/dashboard/admin/users", icon: Users },
   { name: "Properties", href: "/dashboard/admin/properties", icon: Home },
-  { name: "Payments", href: "/dashboard/payments-history", icon: CreditCard },
+  {
+    name: "Refund request",
+    href: "/dashboard/admin/refund-request",
+    icon: Coins,
+  },
+  { name: "Payments", href: "/dashboard/payments", icon: CreditCard },
 ];
 
 const ownerNavigation = [
-  { name: "Dashboard", href: "/dashboard/owner", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "My Properties", href: "/dashboard/owner/my-properties", icon: Home },
   {
     name: "Rent Requests",
     href: "/dashboard/owner/rent-requests",
     icon: MessageSquare,
   },
-  { name: "Payments", href: "/dashboard/payments-history", icon: CreditCard },
+  { name: "Payments", href: "/dashboard/payments", icon: CreditCard },
   { name: "Active plan", href: "/dashboard/active-plan", icon: Crown },
 ];
 
 const tenantNavigation = [
-  { name: "Dashboard", href: "/dashboard/tenant", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Bookings", href: "/dashboard/tenant/bookings", icon: BookMarked },
-  { name: "Payments", href: "/dashboard/payments-history", icon: CreditCard },
+  { name: "Payments", href: "/dashboard/payments", icon: CreditCard },
   { name: "Active plan", href: "/dashboard/active-plan", icon: Crown },
 ];
 

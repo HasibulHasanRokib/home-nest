@@ -1,7 +1,5 @@
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eye, Edit } from "lucide-react";
-
 import {
   Table,
   TableBody,
@@ -11,15 +9,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import {
-  Property,
-  PropertyStatus,
-  Rental,
-  Role,
-  User,
-} from "@/lib/generated/prisma/client";
-import { DeleteProperty } from "./delete-property";
+import { Prisma, PropertyStatus } from "@/lib/generated/prisma/client";
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
 
 const getStatusBadge = (status: PropertyStatus) => {
   switch (status) {
@@ -56,54 +48,44 @@ const getStatusBadge = (status: PropertyStatus) => {
   }
 };
 
-type PropertyWithTenant = Property & {
-  rental:
-    | (Rental & {
-        tenant: User;
-      })
-    | null;
-};
+type PropertyWithRelation = Prisma.PropertyGetPayload<{
+  include: {
+    rental: {
+      include: {
+        tenant: true;
+      };
+    };
+  };
+}>;
 
-export function PropertiesTable({
-  properties,
-  role,
-}: {
-  properties: PropertyWithTenant[];
-  role: Role;
-}) {
+interface PropertiesTableProps {
+  properties: PropertyWithRelation[];
+}
+
+export function PropertiesTable({ properties }: PropertiesTableProps) {
   return (
-    <Table>
-      <TableHeader className="bg-muted">
-        <TableRow>
-          <TableHead>Title</TableHead>
-          <TableHead>Location</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Rent</TableHead>
-          <TableHead>Tenant</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {properties.length === 0 ? (
-          <TableRow className="hover:bg-background">
-            <TableCell colSpan={6}>
-              <p className="text-center font-semibold mt-8">
-                No property found!
-              </p>
-            </TableCell>
+    <div className="min-h-[60vh]">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Title</TableHead>
+            <TableHead>Location</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Rent</TableHead>
+            <TableHead>Tenant</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
-        ) : (
-          properties.map((property) => (
+        </TableHeader>
+        <TableBody>
+          {properties.map((property) => (
             <TableRow key={property.id}>
               <TableCell className="font-medium">{property.title}</TableCell>
-              <TableCell className="text-muted-foreground">
-                {property.location}
-              </TableCell>
+              <TableCell>{property.location}</TableCell>
               <TableCell>{getStatusBadge(property.status)}</TableCell>
-              <TableCell className="font-medium">
+              <TableCell>
                 ৳ {property.price.toLocaleString("en-BD")}/mo
               </TableCell>
-              <TableCell className="text-muted-foreground">
+              <TableCell>
                 {property.rental?.tenant ? (
                   <Link href={`/profile/${property.rental.tenant.id}`}>
                     <div className="flex items-center gap-1">
@@ -123,32 +105,26 @@ export function PropertiesTable({
               </TableCell>
               <TableCell>
                 <div className="flex items-center justify-end gap-2">
-                  <Link href={`/properties/${property.slug}`}>
-                    <Button variant="ghost" size="icon-sm">
-                      <Eye className="h-4 w-4 hover:text-green-600" />
+                  <Button variant="ghost" size="icon-sm" asChild>
+                    <Link href={`/properties/${property.slug}`}>
+                      <Eye className="h-4 w-4 text-green-700" />
                       <span className="sr-only">View property</span>
-                    </Button>
-                  </Link>
-                  {role !== "ADMIN" && (
-                    <>
-                      <Link
-                        href={`/dashboard/owner/my-properties/${property.id}/edit`}
-                      >
-                        <Button variant="ghost" size="icon-sm">
-                          <Edit className="h-4 w-4 hover:text-blue-600" />
-                          <span className="sr-only">Edit property</span>
-                        </Button>
-                      </Link>
-
-                      <DeleteProperty propertyId={property.id} />
-                    </>
-                  )}
+                    </Link>
+                  </Button>
+                  <Button variant="ghost" size="icon-sm" asChild>
+                    <Link
+                      href={`/dashboard/owner/my-properties/${property.id}/edit`}
+                    >
+                      <Edit className="h-4 w-4 text-blue-600" />
+                      <span className="sr-only">Edit property</span>
+                    </Link>
+                  </Button>
                 </div>
               </TableCell>
             </TableRow>
-          ))
-        )}
-      </TableBody>
-    </Table>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }

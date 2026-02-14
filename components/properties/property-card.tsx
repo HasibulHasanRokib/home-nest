@@ -1,13 +1,16 @@
+import Link from "next/link";
 import { Property } from "@/lib/generated/prisma/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Bed, Bath, Square, MapPin, Eye } from "lucide-react";
-import Link from "next/link";
-import { Button } from "../ui/button";
-import { getCurrentUser } from "@/lib/get-current-user";
+import { Button } from "@/components/ui/button";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 export async function PropertyCard({ property }: { property: Property }) {
-  const currentUser = await getCurrentUser();
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
   return (
     <Card className="group overflow-hidden gap-3 transition-shadow rounded-xl hover:shadow-lg p-0">
       <div className="relative aspect-4/3 overflow-hidden">
@@ -46,9 +49,7 @@ export async function PropertyCard({ property }: { property: Property }) {
         </div>
       </CardContent>
       <div className="p-2">
-        <Link
-          href={currentUser ? `/properties/${property.slug}` : "/auth/sign-in"}
-        >
+        <Link href={session ? `/properties/${property.slug}` : "/auth/sign-in"}>
           <Button className="w-full text-muted-foreground" variant={"outline"}>
             <Eye className="w-4 h-4" />
             View details

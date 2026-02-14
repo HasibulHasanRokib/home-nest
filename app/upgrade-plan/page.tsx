@@ -1,5 +1,13 @@
-import { UpgradePlan } from "@/components/subscription/upgrade-plan";
+import { UpgradePlan } from "./upgrade-plan";
 
-export default function UpgradePlanPage() {
-  return <UpgradePlan />;
+export const metadata = {
+  title: "Upgrade Plan",
+};
+
+export default function Page() {
+  return (
+    <div className="min-h-screen flex justify-center items-center p-2">
+      <UpgradePlan />
+    </div>
+  );
 }

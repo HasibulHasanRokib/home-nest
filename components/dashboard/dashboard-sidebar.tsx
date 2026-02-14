@@ -6,36 +6,27 @@ import {
   SidebarMenu,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import Logo from "../logo";
+import { Logo } from "@/components/logo";
+import { Role } from "@/lib/generated/prisma/enums";
+import { DashboardLinks } from "@/components/dashboard/dashboard-links";
 
-import { getCurrentUser } from "@/lib/get-current-user";
-import { DashboardUser } from "./dashboard-user";
-import { DashboardLinks } from "./dashboard-links";
-import { prisma } from "@/lib/prisma";
-
-export async function DashboardSidebar() {
-  const user = await getCurrentUser();
-
-  if (!user) return null;
-
-  const pkg = await prisma.package.findFirst({
-    where: { userId: user.id, active: true },
-  });
-
+export async function DashboardSidebar({ role }: { role: Role }) {
   return (
     <Sidebar>
       <SidebarHeader className="border-b">
         <SidebarMenu>
-          <SidebarMenuItem>
+          <SidebarMenuItem className="px-4">
             <Logo />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <DashboardLinks role={user.role} />
+        <DashboardLinks role={role} />
       </SidebarContent>
-      <SidebarFooter className="border-t">
-        <DashboardUser user={user} pkg={pkg} />
+      <SidebarFooter className="border-t h-12 flex justify-center items-center">
+        <p className="text-sm text-muted-foreground">
+          © {new Date().getFullYear()} - All rights reserved.
+        </p>
       </SidebarFooter>
     </Sidebar>
   );

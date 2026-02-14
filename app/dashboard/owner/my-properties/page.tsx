@@ -1,20 +1,23 @@
-import { getCurrentUser } from "@/lib/get-current-user";
-import { PropertiesTable } from "@/components/dashboard/owner/properties-table";
-import { PropertyStatus, Role } from "@/lib/generated/prisma/enums";
-import { prisma } from "@/lib/prisma";
 import { Metadata } from "next";
-import { notFound } from "next/navigation";
-import {
-  Item,
-  ItemContent,
-  ItemFooter,
-  ItemHeader,
-} from "@/components/ui/item";
-import { PropertyFilter } from "@/components/dashboard/owner/property-filter";
-import PaginationControl from "@/components/pagination";
-import Link from "next/link";
+import { Suspense } from "react";
+import { db } from "@/lib/prisma";
+import { redirect } from "next/navigation";
+import { ArrowDownRightIcon, CookingPot, Plus } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { getRequiredSession } from "@/lib/session";
+import { Prisma } from "@/lib/generated/prisma/client";
+import { PropertyStatus } from "@/lib/generated/prisma/enums";
+import { PaginationControl } from "@/components/pagination-control";
+import { PropertiesTable } from "@/components/dashboard/owner/properties-table";
 import { Button } from "@/components/ui/button";
-import { CirclePlus } from "lucide-react";
+import Link from "next/link";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 
 export const metadata: Metadata = {
   title: "My Properties - Dashboard",
@@ -23,99 +26,110 @@ export const metadata: Metadata = {
 
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 
-export default async function MyPropertiesPage({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
-  const currentUser = await getCurrentUser();
+async function MyProperties({ searchParams }: { searchParams: SearchParams }) {
+  const session = await getRequiredSession();
 
-  if (!currentUser || currentUser.role !== Role.OWNER) {
-    return notFound();
+  if (session.user.role !== "OWNER") {
+    redirect("/dashboard");
   }
 
   const propertySearchParams = await searchParams;
   const page = Number(propertySearchParams.page) || 1;
-  const limit = Number(propertySearchParams.limit) || 5;
+  const limit = Number(propertySearchParams.limit) || 10;
   const search = (propertySearchParams.search as string) || "";
-  const propertyStatus = (propertySearchParams.status as string) || undefined;
+  const propertyStatus = Object.values(PropertyStatus).includes(
+    propertySearchParams.status as PropertyStatus,
+  )
+    ? (propertySearchParams.status as PropertyStatus)
+    : undefined;
 
   const offset = (page - 1) * limit;
 
-  const properties = await prisma.property.findMany({
-    where: {
-      ownerId: currentUser.id,
-      ...(propertyStatus
-        ? { status: propertyStatus.toUpperCase() as PropertyStatus }
-        : {}),
-      OR: search
-        ? [
-            { title: { contains: search, mode: "insensitive" } },
-            { location: { contains: search, mode: "insensitive" } },
-          ]
-        : undefined,
-    },
-    include: {
-      rental: {
-        include: {
-          tenant: true,
+  const where: Prisma.PropertyWhereInput = {
+    ownerId: session.user.id,
+    ...(propertyStatus ? { status: propertyStatus as PropertyStatus } : {}),
+    OR: search
+      ? [
+          { title: { contains: search, mode: "insensitive" } },
+          { location: { contains: search, mode: "insensitive" } },
+        ]
+      : undefined,
+  };
+
+  const [properties, totalProperties] = await Promise.all([
+    db.property.findMany({
+      where,
+      include: {
+        rental: {
+          include: {
+            tenant: true,
+          },
         },
       },
-    },
-    orderBy: { createdAt: "desc" },
-    skip: offset,
-    take: limit,
-  });
+      orderBy: { createdAt: "desc" },
+      skip: offset,
+      take: limit,
+    }),
+    db.property.count({
+      where,
+    }),
+  ]);
 
-  const totalProperties = await prisma.property.count({
-    where: {
-      ownerId: currentUser.id,
-      ...(propertyStatus
-        ? { status: propertyStatus.toUpperCase() as PropertyStatus }
-        : {}),
-      OR: search
-        ? [
-            { title: { contains: search, mode: "insensitive" } },
-            { location: { contains: search, mode: "insensitive" } },
-          ]
-        : undefined,
-    },
-  });
-
-  const totalPages = Math.ceil(totalProperties / limit);
+  if (properties.length === 0) {
+    return (
+      <div className="flex flex-1 items-center justify-center ">
+        <Empty>
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <CookingPot />
+            </EmptyMedia>
+            <EmptyTitle>No Properties Found</EmptyTitle>
+            <EmptyDescription>
+              You haven't added any properties yet.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">My Properties</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage and monitor your rental properties
-        </p>
-      </div>
-      <Item variant="outline" className="space-y-5">
-        <ItemHeader>
-          <PropertyFilter role={currentUser.role} />
-          <Link href={`/dashboard/owner/my-properties/add`}>
-            <Button>
-              <CirclePlus className="h-4 w-4" />
-              <span>Add property</span>
-            </Button>
+    <div>
+      <PropertiesTable properties={properties} />
+      <PaginationControl
+        page={page}
+        limit={limit}
+        total={totalProperties}
+        pathname="/dashboard/owner/my-properties"
+      />
+    </div>
+  );
+}
+
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const { search, page, status } = await searchParams;
+  const key = `${search}-${page}-${status}`;
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-10 ">
+        <h1 className="md:text-4xl text-xl font-bold ">
+          My Properties Section <ArrowDownRightIcon className="inline-block" />
+        </h1>
+        <Button asChild>
+          <Link href="/dashboard/owner/my-properties/new">
+            <Plus />
+            <span className="hidden md:inline-block"> Add property</span>
           </Link>
-        </ItemHeader>
-        <ItemContent>
-          <PropertiesTable properties={properties} role={currentUser.role} />
-        </ItemContent>
-        <ItemFooter>
-          {totalPages > 0 && (
-            <PaginationControl
-              page={page}
-              limit={limit}
-              totalPages={totalPages}
-              total={totalProperties}
-            />
-          )}
-        </ItemFooter>
-      </Item>
+        </Button>
+      </div>
+
+      <Suspense key={key} fallback={<Spinner />}>
+        <MyProperties searchParams={searchParams} />
+      </Suspense>
     </div>
   );
 }

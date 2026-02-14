@@ -1,39 +1,40 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 
-import {
-  DEFAULT_LOGIN_REDIRECT,
-  LOGIN_REDIRECT,
-  authRoutes,
-  publicRoutes,
-  protectedRoutes,
-} from "./app/auth/route-lists";
+const protectedRoutes = ["/dashboard", "/profile"];
+const authRoutes = ["/auth/sign-in", "/auth/sign-up"];
 
-export default auth((req) => {
-  const { nextUrl } = req;
-  const pathname = nextUrl.pathname;
+export async function proxy(request: NextRequest) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+  const { pathname } = request.nextUrl;
 
-  const isLoggedIn = !!req.auth;
-  const isPublicRoute = publicRoutes.includes(pathname);
-  const isAuthRoute = authRoutes.includes(pathname);
-  const isProtectedRoute = protectedRoutes.includes(pathname);
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    pathname.startsWith(route),
+  );
+  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
 
-  if (isPublicRoute) return NextResponse.next();
-
-  if (!isLoggedIn && isProtectedRoute) {
-    return NextResponse.redirect(new URL(LOGIN_REDIRECT, nextUrl));
+  if (session && isAuthRoute) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  if (isAuthRoute && isLoggedIn) {
-    return NextResponse.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl));
-  }
+  if (!session && isProtectedRoute) {
+    const signInUrl = new URL("/auth/sign-in", request.url);
 
+    signInUrl.searchParams.set("callbackUrl", request.nextUrl.pathname);
+
+    return NextResponse.redirect(signInUrl);
+  }
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: [
-    "/((?!_next|.*\\.(?:ico|png|jpg|jpeg|svg|css|js|json|woff2?|ttf|txt|csv|pdf|docx?|xlsx?|zip|webmanifest)).*)",
-    "/(api|trpc)(.*)",
+    "/dashboard/:path*",
+    "/profile/:path*",
+    "/auth/sign-in",
+    "/auth/sign-up",
   ],
 };

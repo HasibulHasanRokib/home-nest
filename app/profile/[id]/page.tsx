@@ -1,685 +1,316 @@
-import { prisma } from "@/lib/prisma";
+import { db } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import {
-  Facebook,
-  Twitter,
-  Linkedin,
-  MessageCircle,
-  CalendarDays,
+  BadgeCheck,
+  MapPin,
   Phone,
   Mail,
+  User as UserIcon,
+  Shield,
+  CreditCard,
+  Facebook,
+  MessageCircle,
+  FileText,
+  Landmark,
 } from "lucide-react";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-import { formatBDPhone, formatDate, getInitials } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { formatDate } from "@/lib/utils";
 import Image from "next/image";
-import { getCurrentUser } from "@/lib/get-current-user";
-import { VerificationManagement } from "@/components/profile/verification";
-import Logo from "@/components/logo";
-import { UserStatus } from "@/lib/generated/prisma/enums";
-import { ProfileReview } from "@/components/profile/profile-review";
-import { StarRating } from "@/components/star-rating";
+import { Suspense } from "react";
+import { Spinner } from "@/components/ui/spinner";
+import { getRequiredSession } from "@/lib/session";
 
-const getUserStatusBadge = (status: UserStatus) => {
-  switch (status) {
-    case UserStatus.OPEN:
-      return (
-        <Badge className="bg-blue-100 text-blue-700 border border-blue-200">
-          Open
-        </Badge>
-      );
-
-    case UserStatus.NOT_VERIFIED:
-      return (
-        <Badge className="bg-yellow-100 text-yellow-800 border border-yellow-200">
-          Not Verified
-        </Badge>
-      );
-
-    case UserStatus.VERIFIED:
-      return (
-        <Badge className="bg-green-100 text-green-700 border border-green-200">
-          Verified
-        </Badge>
-      );
-
-    case UserStatus.SUSPENDED:
-      return (
-        <Badge className="bg-red-100 text-red-700 border border-red-200">
-          Suspended
-        </Badge>
-      );
-
-    default:
-      return <Badge variant="outline">{status}</Badge>;
-  }
-};
-
-const VerificationBadge = ({ verified }: { verified?: boolean }) => {
-  return verified ? (
-    <Badge className="text-xs bg-green-100 text-green-700 border border-green-200">
-      Verified
-    </Badge>
-  ) : (
-    <Badge
-      variant="outline"
-      className="text-xs bg-red-50 text-red-600 border border-red-200"
-    >
-      Not Verified
-    </Badge>
-  );
-};
-
-export default async function ProfilePage({
-  params,
+function InfoBlock({
+  label,
+  value,
 }: {
-  params: Promise<{ id: string }>;
+  label: string;
+  value?: string | number | null;
 }) {
+  return (
+    <div className="space-y-0.5">
+      <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70">
+        {label}
+      </p>
+      <p className="text-[15px] font-semibold text-foreground/90">
+        {value || "Not Provided"}
+      </p>
+    </div>
+  );
+}
+
+interface Props {
+  params: Promise<{ id: string }>;
+}
+
+async function Profile({ params }: Props) {
   const { id } = await params;
-
-  const [user, userRating] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id },
-      include: {
-        declaration: true,
-        address: true,
-        profile: true,
-        validation: true,
-      },
-    }),
-    prisma.profileReview.findFirst({ where: { userId: id } }),
-  ]);
-
-  const currentUser = await getCurrentUser();
-  const totalProperty = await prisma.property.count({
-    where: {
-      ownerId: id,
+  const session = await getRequiredSession();
+  const user = await db.user.findUnique({
+    where: { id },
+    include: {
+      declaration: true,
+      address: true,
+      profile: true,
     },
   });
 
   if (!user) return notFound();
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto p-4 md:p-6">
-        {/* Profile Header */}
-        <div className="mb-8">
-          <div className="relative rounded-xl border bg-card p-6 md:p-8 shadow-sm">
-            <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-start md:items-center">
-              {/* Avatar */}
-              <div className="relative shrink-0">
-                <Avatar className="h-24 w-24 md:h-32 md:w-32 ring-4 ring-primary/20">
-                  <AvatarImage src={user.image || "/user.png"} />
-                  <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-semibold">
-                    {getInitials(user.name)}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
+    <div className="mx-auto max-w-6xl px-4 py-10 space-y-8">
+      <div className="flex flex-col md:flex-row gap-8 items-center md:items-start bg-card p-8 rounded-3xl border shadow-sm">
+        <div className="relative">
+          <Avatar className="h-40 w-40 border-4 border-background shadow-2xl">
+            <AvatarImage src={user.image || ""} />
+            <AvatarFallback className="text-4xl font-bold bg-primary text-primary-foreground">
+              {user.name?.slice(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          {user.status === "VERIFIED" && (
+            <div className="absolute bottom-2 right-2 bg-background rounded-full p-1">
+              <BadgeCheck className="h-8 w-8 text-blue-500 fill-blue-50" />
+            </div>
+          )}
+        </div>
 
-              {/* Profile Info */}
-              <div className="flex-1 space-y-1">
-                {/* Name */}
-                <h1 className="text-2xl md:text-3xl font-bold capitalize">
-                  {user.name}
-                </h1>
+        <div className="flex-1 space-y-4 text-center md:text-left">
+          <div className="space-y-1">
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+              <h1 className="text-4xl font-extrabold tracking-tight">
+                {user.name}
+              </h1>
+              <Badge className="px-3 py-1 text-sm uppercase tracking-wider">
+                {user.role}
+              </Badge>
+            </div>
+            <p className="text-muted-foreground text-lg flex items-center justify-center md:justify-start gap-2">
+              <Mail className="h-5 w-5" /> {user.email}
+            </p>
+          </div>
 
-                {/* Contact Info */}
-                <div className="text-sm text-muted-foreground">
-                  <div className="space-y-2">
-                    <StarRating rating={userRating?.rating || 0} />
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4" />
-                      <span>{user.email}</span>
-                      <VerificationBadge verified={user.emailVerified} />
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4" />
-                      <span>{formatBDPhone(user.mobileNumber)}</span>
-                      <VerificationBadge
-                        verified={user.validation?.mobileNumberVerified}
-                      />
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <CalendarDays className="h-4 w-4" />
-                      <span>Member since {formatDate(user.createdAt)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          <div className="flex flex-wrap justify-center md:justify-start gap-4">
+            <div className="bg-muted px-4 py-2 rounded-2xl flex items-center gap-2">
+              <Shield className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">
+                Status: {user.status.replace("_", " ")}
+              </span>
+            </div>
+            <div className="bg-yellow-500/10 text-yellow-700 px-4 py-2 rounded-2xl flex items-center gap-2 border border-yellow-200">
+              <CreditCard className="h-4 w-4" />
+              <span className="text-sm font-bold">
+                {user.credits} Credits Available
+              </span>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Overview Section */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4 text-foreground">
-            Account Overview
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-semibold">Role</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-lg font-semibold capitalize">{user.role}</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-semibold">
-                  Account Status
-                </CardTitle>
-              </CardHeader>
-              <CardContent>{getUserStatusBadge(user.status)}</CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-semibold">
-                  Credits Balance
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-lg font-semibold">{user.credits}</p>
-              </CardContent>
-            </Card>
-
-            {user.role === "OWNER" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm font-semibold">
-                    Total Properties
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-lg font-semibold">{totalProperty}</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </div>
-
-        {/* Personal Information Section */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4 text-foreground">
-            Personal Information
-            <span className="ml-2">
-              <VerificationBadge
-                verified={user.validation?.personalInfoVerified}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column - Personal & Contact */}
+        <div className="lg:col-span-1 space-y-8">
+          <Card className="rounded-2xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 ">
+                <UserIcon className="h-5 w-5 text-primary" /> Basic Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <InfoBlock label="Occupation" value={user.profile?.occupation} />
+              <InfoBlock label="Gender" value={user.profile?.gender} />
+              <InfoBlock label="Religion" value={user.profile?.religion} />
+              <InfoBlock
+                label="Household"
+                value={user.profile?.householdType}
               />
-            </span>
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-semibold">
-                  Date of Birth
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-foreground capitalize">
-                  {formatDate(user.profile?.dateOfBirth || new Date())}
-                </p>
-              </CardContent>
-            </Card>
+              <InfoBlock
+                label="Member Since"
+                value={formatDate(user.createdAt)}
+              />
+            </CardContent>
+          </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-semibold">Gender</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-foreground capitalize">
-                  {user.profile?.gender.toLowerCase()}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-semibold">
-                  Religion
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-foreground capitalize">
-                  {user.profile?.religion.toLowerCase()}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-semibold">
-                  Occupation
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-foreground capitalize">
-                  {user.profile?.occupation}
-                </p>
-              </CardContent>
-            </Card>
-
-            {user.role === "TENANT" && (
-              <>
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm font-semibold">
-                      Household Type
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-foreground capitalize">
-                      {user.profile?.householdType?.toLowerCase()}
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm font-semibold">
-                      Family Size
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-foreground capitalize">
-                      {user.profile?.familySize} Members
-                    </p>
-                  </CardContent>
-                </Card>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Address Section */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4 text-foreground">
-            Address Information
-          </h2>
-          <div className="grid grid-cols-1  gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">
-                  Present Address
-                  <span className="ml-2">
-                    <VerificationBadge
-                      verified={user.validation?.presentAddressVerified}
-                    />
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">
-                      Division
-                    </p>
-                    <p className="text-foreground capitalize">
-                      {user.address?.presentDivision}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">
-                      District
-                    </p>
-                    <p className="text-foreground capitalize">
-                      {user.address?.presentDistrict}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">
-                      Upazila
-                    </p>
-                    <p className="text-foreground capitalize">
-                      {user.address?.presentUpazila}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">
-                      Post Office
-                    </p>
-                    <p className="text-foreground capitalize">
-                      {user.address?.presentPostOffice}
-                    </p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">
-                      Post Code
-                    </p>
-                    <p className="text-foreground capitalize">
-                      {user.address?.presentPostCode}
-                    </p>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">
-                    Details
-                  </p>
-                  <p className="text-foreground capitalize">
-                    {user.address?.presentDetails}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">
-                  Permanent Address
-                  <span className="ml-2">
-                    <VerificationBadge
-                      verified={user.validation?.permanentAddressVerified}
-                    />
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">
-                      Division
-                    </p>
-                    <p className="text-foreground capitalize">
-                      {user.address?.permanentDivision}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">
-                      District
-                    </p>
-                    <p className="text-foreground capitalize">
-                      {user.address?.permanentDistrict}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">
-                      Upazila
-                    </p>
-                    <p className="text-foreground capitalize">
-                      {user.address?.permanentUpazila}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">
-                      Post Office
-                    </p>
-                    <p className="text-foreground capitalize">
-                      {user.address?.permanentPostOffice}
-                    </p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground font-medium">
-                      Post Code
-                    </p>
-                    <p className="text-foreground capitalize">
-                      {user.address?.permanentPostCode}
-                    </p>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground font-medium">
-                    Details
-                  </p>
-                  <p className="text-foreground capitalize">
-                    {user.address?.permanentDetails}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* Social Links Section */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4 text-foreground">
-            Social Links
-          </h2>
-          <Card>
-            <CardContent className="pt-6 space-y-3">
-              <div className="flex items-center justify-between p-3 border border-border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Facebook className="w-5 h-5 text-blue-600" />
-                  <span className="text-foreground">
-                    {user.profile?.facebook}
-                  </span>
-                </div>
-                <span className="ml-2">
-                  <VerificationBadge
-                    verified={user.validation?.facebookVerified}
-                  />
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between p-3 border border-border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Twitter className="w-5 h-5 text-blue-400" />
-                  <span className="text-foreground">
-                    {user.profile?.twitter}
-                  </span>
-                </div>
-                <span className="ml-2">
-                  <VerificationBadge
-                    verified={user.validation?.twitterVerified}
-                  />
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between p-3 border border-border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Linkedin className="w-5 h-5 text-blue-700" />
-                  <span className="text-foreground">
-                    {user.profile?.linkedin}
-                  </span>
-                </div>
-                <span className="ml-2">
-                  <VerificationBadge
-                    verified={user.validation?.linkedinVerified}
-                  />
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between p-3 border border-border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <MessageCircle className="w-5 h-5 text-green-600" />
-                  <span className="text-foreground">
-                    {user.profile?.whatsapp}
-                  </span>
-                </div>
-                <span className="ml-2">
-                  <VerificationBadge
-                    verified={user.validation?.whatsappVerified}
-                  />
-                </span>
+          <Card className="rounded-2xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 ">
+                <Phone className="h-5 w-5 text-primary" /> Contact Details
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <InfoBlock
+                label="Mobile Number"
+                value={user.profile?.mobileNumber}
+              />
+              <InfoBlock label="WhatsApp" value={user.profile?.whatsapp} />
+              <div className="pt-2 flex gap-4">
+                {user.profile?.facebook && (
+                  <a
+                    href={user.profile.facebook}
+                    className="p-2 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100 transition-colors"
+                  >
+                    <Facebook className="h-5 w-5" />
+                  </a>
+                )}
+                {user.profile?.whatsapp && (
+                  <a
+                    href={`https://wa.me/${user.profile.whatsapp}`}
+                    className="p-2 bg-green-50 text-green-600 rounded-full hover:bg-green-100 transition-colors"
+                  >
+                    <MessageCircle className="h-5 w-5" />
+                  </a>
+                )}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {(currentUser?.id === id || currentUser?.role === "ADMIN") && (
-          <>
-            {/* Declaration */}
-            <div className="mb-8">
-              <h2 className="text-xl font-bold mb-4 text-foreground">
-                Declaration
-                <span className="ml-2">
-                  <VerificationBadge
-                    verified={user.validation?.declarationVerified}
-                  />
-                </span>
-              </h2>
-              <Card>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium mb-2">
-                        Photo
-                      </p>
-                      {user.declaration?.photo ? (
-                        <div className="relative w-full h-52 border border-border rounded-lg">
-                          <Image
-                            src={user.declaration?.photo}
-                            alt="Uploaded image"
-                            fill
-                            className="object-contain"
-                          />
-                        </div>
-                      ) : (
-                        <div className="w-full h-24 border border-border rounded-lg bg-muted/50 flex items-center justify-center text-xs text-muted-foreground">
-                          Photo not provide
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium mb-2">
-                        Signature
-                      </p>
-                      {user.declaration?.signature ? (
-                        <div className="relative w-full h-52 border border-border rounded-lg">
-                          <Image
-                            src={user.declaration?.signature}
-                            alt="Uploaded image"
-                            fill
-                            className="object-contain"
-                          />
-                        </div>
-                      ) : (
-                        <div className="w-full h-24 border border-border rounded-lg bg-muted/50 flex items-center justify-center text-xs text-muted-foreground">
-                          Signature not provide
-                        </div>
-                      )}
+        {/* Right Column - Address, Finance & Verification */}
+        <div className="lg:col-span-2 space-y-8">
+          {/* Address Card */}
+          <Card className="rounded-2xl shadow-sm border-primary/10">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5 text-primary" /> Permanent Address
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Details</p>
+                  <p className="font-medium text-lg leading-relaxed">
+                    {user.address?.details}
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <InfoBlock label="Upazila" value={user.address?.upazila} />
+                  <InfoBlock label="District" value={user.address?.district} />
+                  <InfoBlock label="Division" value={user.address?.division} />
+                  <InfoBlock label="Post Code" value={user.address?.postCode} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Identity & Finance */}
+          <div className="grid md:grid-cols-2 gap-8">
+            <Card className="rounded-2xl">
+              <CardHeader>
+                <CardTitle className="text-sm font-bold flex items-center gap-2 uppercase tracking-tighter">
+                  <Landmark className="h-4 w-4 text-primary" /> Financial Info
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <InfoBlock
+                  label="Bank Account"
+                  value={user.profile?.bankAccount || "N/A"}
+                />
+                <InfoBlock
+                  label="Mobile Banking"
+                  value={user.profile?.mobileBanking || "N/A"}
+                />
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-2xl border-2">
+              <CardHeader>
+                <CardTitle className="text-sm font-bold flex items-center gap-2 uppercase tracking-tighter">
+                  <Shield className="h-4 w-4 text-primary" /> Verification IDs
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <InfoBlock label="NID Number" value={user.profile?.nidNumber} />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Legal Declarations */}
+          {(session.user.id === user.id || session.user.role === "ADMIN") && (
+            <Card className="rounded-2xl overflow-hidden">
+              <CardHeader className="border-b">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" /> Declaration &
+                  Documents
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="grid md:grid-cols-2 divide-x divide-y md:divide-y-0">
+                  <div className="p-6 space-y-4">
+                    <p className="text-sm font-semibold text-muted-foreground">
+                      Self Photo
+                    </p>
+                    <div className="relative h-48 w-full rounded-xl overflow-hidden border-2 border-muted shadow-inner">
+                      <Image
+                        fill
+                        src={user.declaration?.photo || ""}
+                        alt="Official Photo"
+                        className="object-contain"
+                      />
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Document Attachments  */}
-            <div className="mb-8">
-              <h2 className="text-xl font-bold mb-4 text-foreground">
-                Document Attachments
-              </h2>
-              <div className="space-y-4">
-                <Card>
-                  <CardContent className="space-y-6">
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium mb-1">
-                        NID Number
-                      </p>
-                      <p className={`text-foreground font-mono`}>
-                        {user.profile?.nidNumber || "N/A"}
-                        <span className="ml-2">
-                          <VerificationBadge
-                            verified={user.validation?.nidSmartCardVerified}
-                          />
-                        </span>
-                      </p>
+                  <div className="p-6 space-y-4">
+                    <p className="text-sm font-semibold text-muted-foreground">
+                      E-Signature
+                    </p>
+                    <div className="relative h-48 w-full rounded-xl overflow-hidden border-2 border-muted bg-white">
+                      <Image
+                        fill
+                        src={user.declaration?.signature || ""}
+                        alt="Signature"
+                        className="object-contain p-4"
+                      />
                     </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium mb-1">
-                        Passport Number
-                      </p>
-                      <p className="text-foreground font-mono">
-                        {user.profile?.passportNumber || "N/A"}
-                        <span className="ml-2">
-                          <VerificationBadge
-                            verified={user.validation?.passportVerified}
-                          />
-                        </span>
-                      </p>
+                  </div>
+                </div>
+                <div className="grid md:grid-cols-2 divide-x divide-y md:divide-y-0">
+                  <div className="p-6 space-y-4">
+                    <p className="text-sm font-semibold text-muted-foreground">
+                      Nid Front Side
+                    </p>
+                    <div className="relative h-48 w-full rounded-xl overflow-hidden border-2 border-muted shadow-inner">
+                      <Image
+                        fill
+                        src={user.profile?.attachment1 || ""}
+                        alt="Nid Front Side"
+                        className="object-contain"
+                      />
                     </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground font-medium mb-1">
-                        Birth Certificate
-                      </p>
-                      <p className="text-foreground font-mono">
-                        {user.profile?.birthCertificateNumber || "N/A"}
-                        <span className="ml-2">
-                          <VerificationBadge
-                            verified={user.validation?.birthCertificateVerified}
-                          />
-                        </span>
-                      </p>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <p className="text-sm font-semibold text-muted-foreground">
+                      Nid Back Side
+                    </p>
+                    <div className="relative h-48 w-full rounded-xl overflow-hidden border-2 border-muted bg-white">
+                      <Image
+                        fill
+                        src={user.profile?.attachment2 || ""}
+                        alt="Nid Back Side"
+                        className="object-contain p-4"
+                      />
                     </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs text-muted-foreground font-medium mb-2">
-                          {user.profile?.attachmentType}
-                        </p>
-                        {user.profile?.attachment1 ? (
-                          <div className="relative w-full h-52 border border-border rounded-lg">
-                            <Image
-                              src={user.profile?.attachment1}
-                              alt="Uploaded image"
-                              fill
-                              className="object-contain"
-                            />
-                          </div>
-                        ) : (
-                          <div className="w-full h-24 border border-border rounded-lg bg-muted/50 flex items-center justify-center text-xs text-muted-foreground">
-                            {user.profile?.attachmentType} not provide
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground font-medium mb-2">
-                          {user.profile?.attachmentType}
-                        </p>
-                        {user.profile?.attachment2 ? (
-                          <div className="relative w-full h-52 border border-border rounded-lg">
-                            <Image
-                              src={user.profile?.attachment2}
-                              alt="Uploaded image"
-                              fill
-                              className="object-contain"
-                            />
-                          </div>
-                        ) : (
-                          <div className="w-full h-24 border border-border rounded-lg bg-muted/50 flex items-center justify-center text-xs text-muted-foreground">
-                            {user.profile?.attachmentType} not provide
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </>
-        )}
-
-        {currentUser?.role === "ADMIN" && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold mb-4 text-foreground">
-              Verification
-            </h2>
-            <VerificationManagement userId={id} />
-          </div>
-        )}
-
-        {currentUser?.id !== id && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold mb-4 text-foreground">Review</h2>
-            <ProfileReview userId={id} />
-          </div>
-        )}
-
-        <div className="flex items-center justify-center">
-          <Logo />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
+    </div>
+  );
+}
+
+export default function Page({ params }: Props) {
+  return (
+    <div className="bg-accent">
+      <Suspense
+        fallback={
+          <div className="min-h-screen flex justify-center items-center">
+            <Spinner />
+          </div>
+        }
+      >
+        <Profile params={params} />
+      </Suspense>
     </div>
   );
 }

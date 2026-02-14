@@ -1,5 +1,5 @@
-import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { clsx, type ClassValue } from "clsx";
 import { format } from "date-fns";
 
 export function cn(...inputs: ClassValue[]) {
@@ -13,10 +13,6 @@ export const getInitials = (name: string) =>
     .join("")
     .toUpperCase();
 
-export function formatDate(dateString: string | Date) {
-  return format(new Date(dateString), "MMMM d, yyyy");
-}
-
 export function formatBDPhone(number: string) {
   if (!number) return "";
 
@@ -27,4 +23,8 @@ export function formatBDPhone(number: string) {
   }
 
   return number;
+}
+
+export function formatDate(dateString: string | Date) {
+  return format(new Date(dateString), "MMMM d, yyyy");
 }
